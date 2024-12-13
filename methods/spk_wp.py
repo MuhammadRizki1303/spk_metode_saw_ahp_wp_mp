@@ -1,59 +1,89 @@
+import tkinter as tk
+from tkinter import messagebox
 import numpy as np
 
-def input_wp_data():
-    print("Masukkan jumlah alternatif:")
-    m = int(input("Jumlah alternatif: "))
-    alternatives = [input(f"Nama alternatif {i+1}: ") for i in range(m)]
+def calculate_wp(criteria, weights, decision_matrix):
+    # Menghitung nilai preferensi WP
+    weighted_matrix = np.power(decision_matrix, weights)
+    scores = weighted_matrix.prod(axis=1)
+    return scores / scores.sum()  # Normalisasi skor
 
-    print("Masukkan jumlah kriteria:")
-    n = int(input("Jumlah kriteria: "))
-    criteria = [input(f"Nama kriteria {i+1}: ") for i in range(n)]
+def wp_gui():
+    root = tk.Tk()
+    root.title("SPK - Weighted Product (WP)")
+    root.geometry("500x600")
 
-    print("Masukkan bobot masing-masing kriteria (dalam persentase, total 100%):")
-    weights = np.array([float(input(f"Bobot {criteria[i]}: ")) for i in range(n)])
+    tk.Label(root, text="SPK - Weighted Product (WP)", font=("Arial", 14)).pack(pady=10)
 
-    print("Masukkan jenis kriteria (1 untuk Benefit, 0 untuk Cost):")
-    types = np.array([int(input(f"Jenis {criteria[i]} (1=Benefit, 0=Cost): ")) for i in range(n)])
+    tk.Label(root, text="Jumlah Alternatif:").pack(pady=5)
+    alt_count_entry = tk.Entry(root)
+    alt_count_entry.pack()
 
-    print("Masukkan matriks keputusan:")
-    decision_matrix = []
-    for i in range(m):
-        print(f"Alternatif {alternatives[i]}:")
-        decision_matrix.append([float(input(f"Nilai {criteria[j]}: ")) for j in range(n)])
+    tk.Label(root, text="Jumlah Kriteria:").pack(pady=5)
+    crit_count_entry = tk.Entry(root)
+    crit_count_entry.pack()
 
-    return alternatives, criteria, weights, types, np.array(decision_matrix)
+    def next_step():
+        try:
+            alt_count = int(alt_count_entry.get())
+            crit_count = int(crit_count_entry.get())
 
-def normalize_weights(weights):
-    return weights / weights.sum()
+            if alt_count <= 0 or crit_count <= 0:
+                raise ValueError("Jumlah alternatif dan kriteria harus lebih dari 0.")
 
-def calculate_wp_score(decision_matrix, weights, types):
-    normalized_weights = normalize_weights(weights)
-    for j, t in enumerate(types):
-        if t == 0:  # Cost
-            decision_matrix[:, j] = 1 / decision_matrix[:, j]
-    
-    scores = np.prod(decision_matrix ** normalized_weights, axis=1)
-    return scores
+            inputs_window = tk.Toplevel()
+            inputs_window.title("Input WP")
+            inputs_window.geometry("600x600")
 
-def main():
-    print("### Weighted Product (WP) ###")
-    alternatives, criteria, weights, types, decision_matrix = input_wp_data()
+            tk.Label(inputs_window, text="Nama Alternatif:").pack(pady=5)
+            alt_entries = [tk.Entry(inputs_window) for _ in range(alt_count)]
+            for entry in alt_entries:
+                entry.pack()
 
-    print("\nMatriks Keputusan:")
-    print(decision_matrix)
+            tk.Label(inputs_window, text="Bobot Kriteria (total 1):").pack(pady=5)
+            weight_entries = [tk.Entry(inputs_window) for _ in range(crit_count)]
+            for entry in weight_entries:
+                entry.pack()
 
-    print("\nBobot Kriteria:")
-    print(weights)
+            tk.Label(inputs_window, text="Matriks Keputusan:").pack(pady=5)
+            matrix_entries = []
+            for i in range(alt_count):
+                row_entries = []
+                for j in range(crit_count):
+                    entry = tk.Entry(inputs_window, width=10)
+                    entry.pack(side=tk.LEFT, padx=5, pady=5)
+                    row_entries.append(entry)
+                matrix_entries.append(row_entries)
+                tk.Label(inputs_window, text="").pack()
 
-    scores = calculate_wp_score(decision_matrix, weights, types)
+            def calculate():
+                try:
+                    alternatives = [entry.get() for entry in alt_entries]
+                    weights = np.array([float(entry.get()) for entry in weight_entries])
+                    decision_matrix = np.array([
+                        [float(entry.get()) for entry in row]
+                        for row in matrix_entries
+                    ])
 
-    print("\nHasil Skor WP:")
-    for alt, score in zip(alternatives, scores):
-        print(f"{alt}: {score:.4f}")
+                    scores = calculate_wp(None, weights, decision_matrix)
 
-    print("\nAlternatif Terbaik:")
-    best_index = np.argmax(scores)
-    print(f"{alternatives[best_index]} dengan skor {scores[best_index]:.4f}")
+                    results_window = tk.Toplevel()
+                    results_window.title("Hasil WP")
+                    results_window.geometry("400x300")
+                    tk.Label(results_window, text="Skor Alternatif", font=("Arial", 14)).pack(pady=10)
+                    for alt, score in zip(alternatives, scores):
+                        tk.Label(results_window, text=f"{alt}: {score:.4f}").pack()
+
+                except Exception as e:
+                    messagebox.showerror("Error", f"Terjadi kesalahan: {e}")
+
+            tk.Button(inputs_window, text="Hitung WP", command=calculate).pack(pady=20)
+
+        except ValueError as e:
+            messagebox.showerror("Error", f"Input tidak valid: {e}")
+
+    tk.Button(root, text="Lanjutkan", command=next_step).pack(pady=20)
+    root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    wp_gui()

@@ -1,44 +1,20 @@
 import tkinter as tk
-from tkinter import messagebox
-import os
+import methods.spk_saw as spk_saw
+import methods.spk_ahp as spk_ahp
+import methods.spk_wp as spk_wp
+import methods.spk_profile_matching as spk_pm
 
-def open_saw():
-    os.system("python methods/spk_saw.py")
-
-def open_ahp():
-    os.system("python methods/spk_ahp.py")
-
-def open_wp():
-    os.system("python methods/spk_wp.py")
-
-def open_profile_matching():
-    os.system("python methods/spk_profile_matching.py")
-
-# Membuat GUI untuk Menu SPK
 def main_menu():
     root = tk.Tk()
-    root.title("Sistem Pengambilan Keputusan")
+    root.title("Sistem Pendukung Keputusan (SPK)")
     root.geometry("400x300")
 
-    label_title = tk.Label(root, text="Pilih Metode Pengambilan Keputusan", font=("Arial", 14))
-    label_title.pack(pady=20)
+    tk.Label(root, text="Sistem Pendukung Keputusan (SPK)", font=("Arial", 16)).pack(pady=20)
 
-    # Tombol Metode
-    btn_saw = tk.Button(root, text="Simple Additive Weighting (SAW)", width=30, command=open_saw)
-    btn_saw.pack(pady=5)
-
-    btn_ahp = tk.Button(root, text="Analytic Hierarchy Process (AHP)", width=30, command=open_ahp)
-    btn_ahp.pack(pady=5)
-
-    btn_wp = tk.Button(root, text="Weighted Product (WP)", width=30, command=open_wp)
-    btn_wp.pack(pady=5)
-
-    btn_pm = tk.Button(root, text="Profile Matching", width=30, command=open_profile_matching)
-    btn_pm.pack(pady=5)
-
-    # Menutup aplikasi
-    btn_exit = tk.Button(root, text="Keluar", width=30, command=root.quit)
-    btn_exit.pack(pady=20)
+    tk.Button(root, text="Metode SAW", width=20, command=spk_saw.saw_gui).pack(pady=10)
+    tk.Button(root, text="Metode AHP", width=20, command=spk_ahp.ahp_gui).pack(pady=10)
+    tk.Button(root, text="Metode WP", width=20, command=spk_wp.wp_gui).pack(pady=10)
+    tk.Button(root, text="Metode Profile Matching", width=20, command=spk_pm.pm_gui).pack(pady=10)
 
     root.mainloop()
 

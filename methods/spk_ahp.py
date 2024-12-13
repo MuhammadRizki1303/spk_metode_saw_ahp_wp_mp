@@ -1,60 +1,79 @@
+import tkinter as tk
+from tkinter import messagebox
 import numpy as np
 
-def input_criteria():
-    print("Masukkan jumlah kriteria:")
-    n = int(input("Jumlah kriteria: "))
-    criteria = [input(f"Nama kriteria {i+1}: ") for i in range(n)]
+def calculate_ahp(pairwise_matrix, criteria_weights):
+    # Normalisasi matriks perbandingan berpasangan
+    normalized_matrix = pairwise_matrix / pairwise_matrix.sum(axis=0)
+    priority_vector = normalized_matrix.mean(axis=1)
+    return priority_vector
 
-    print("Masukkan matriks perbandingan berpasangan:")
-    pairwise_matrix = []
-    for i in range(n):
-        row = []
-        for j in range(n):
-            if i == j:
-                row.append(1)
-            elif i < j:
-                value = float(input(f"Nilai perbandingan {criteria[i]} vs {criteria[j]}: "))
-                row.append(value)
-            else:
-                row.append(1 / pairwise_matrix[j][i])
-        pairwise_matrix.append(row)
+def ahp_gui():
+    root = tk.Tk()
+    root.title("SPK - Analytic Hierarchy Process (AHP)")
+    root.geometry("600x600")
 
-    return criteria, np.array(pairwise_matrix)
+    tk.Label(root, text="SPK - Analytic Hierarchy Process (AHP)", font=("Arial", 14)).pack(pady=10)
 
-def calculate_weights(pairwise_matrix):
-    eig_values, eig_vectors = np.linalg.eig(pairwise_matrix)
-    max_index = np.argmax(eig_values)
-    principal_eig_vector = eig_vectors[:, max_index].real
-    weights = principal_eig_vector / principal_eig_vector.sum()
-    return weights
+    tk.Label(root, text="Jumlah Kriteria:").pack(pady=5)
+    crit_count_entry = tk.Entry(root)
+    crit_count_entry.pack()
 
-def calculate_consistency(pairwise_matrix, weights):
-    n = pairwise_matrix.shape[0]
-    lambda_max = (pairwise_matrix @ weights).sum() / weights.sum()
-    ci = (lambda_max - n) / (n - 1)
-    ri_values = {1: 0.00, 2: 0.00, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49}
-    ri = ri_values.get(n, 1.49)
-    cr = ci / ri if ri != 0 else 0
-    return cr
+    def next_step():
+        try:
+            crit_count = int(crit_count_entry.get())
+            if crit_count <= 0:
+                raise ValueError("Jumlah kriteria harus lebih dari 0.")
 
-def main():
-    print("### Analytic Hierarchy Process (AHP) ###")
-    criteria, pairwise_matrix = input_criteria()
+            inputs_window = tk.Toplevel()
+            inputs_window.title("Input Matriks Perbandingan Berpasangan")
+            inputs_window.geometry("600x600")
 
-    print("\nMatriks Perbandingan Berpasangan:")
-    print(pairwise_matrix)
+            tk.Label(inputs_window, text="Masukkan Matriks Perbandingan Berpasangan:").pack(pady=5)
 
-    weights = calculate_weights(pairwise_matrix)
-    print("\nBobot Kriteria:")
-    for crit, weight in zip(criteria, weights):
-        print(f"{crit}: {weight:.4f}")
+            matrix_entries = []
+            for i in range(crit_count):
+                row_entries = []
+                for j in range(crit_count):
+                    entry = tk.Entry(inputs_window, width=10)
+                    entry.pack(side=tk.LEFT, padx=5, pady=5)
+                    row_entries.append(entry)
+                matrix_entries.append(row_entries)
+                tk.Label(inputs_window, text="").pack()  # Pindah ke baris berikutnya
 
-    cr = calculate_consistency(pairwise_matrix, weights)
-    print(f"\nRasio Konsistensi (CR): {cr:.4f}")
-    if cr < 0.1:
-        print("Konsistensi diterima.")
-    else:
-        print("Konsistensi tidak diterima. Silakan revisi matriks perbandingan.")
+            def calculate():
+                try:
+                    # Ambil matriks perbandingan berpasangan
+                    pairwise_matrix = np.array([
+                        [float(entry.get()) for entry in row]
+                        for row in matrix_entries
+                    ])
+
+                    # Validasi matriks
+                    if pairwise_matrix.shape[0] != pairwise_matrix.shape[1]:
+                        raise ValueError("Matriks harus berbentuk persegi.")
+
+                    # Lakukan perhitungan AHP
+                    priority_vector = calculate_ahp(pairwise_matrix, None)
+
+                    # Tampilkan hasil
+                    results_window = tk.Toplevel()
+                    results_window.title("Hasil AHP")
+                    results_window.geometry("400x300")
+                    tk.Label(results_window, text="Prioritas Kriteria", font=("Arial", 14)).pack(pady=10)
+                    for i, val in enumerate(priority_vector):
+                        tk.Label(results_window, text=f"Kriteria {i+1}: {val:.4f}").pack()
+
+                except Exception as e:
+                    messagebox.showerror("Error", f"Terjadi kesalahan: {e}")
+
+            tk.Button(inputs_window, text="Hitung AHP", command=calculate).pack(pady=20)
+
+        except ValueError as e:
+            messagebox.showerror("Error", f"Input tidak valid: {e}")
+
+    tk.Button(root, text="Lanjutkan", command=next_step).pack(pady=20)
+    root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    ahp_gui()
